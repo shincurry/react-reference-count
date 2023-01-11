@@ -1,8 +1,10 @@
 import React, { useContext, useEffect, useRef } from "react";
 import { ReferenceCount } from "../class/ReferenceCount";
+import { useForceUpdate } from "../utils/useForceUpdate";
 
 
 export interface ReferenceCountValue {
+  getCount: (key: string) => number | undefined;
   retain: (key: string, n?: number) => void;
   release: (key: string, n?: number) => void;
   subscribeCountChange: (listener: (key: string, count: number) => void) => void;
@@ -20,14 +22,23 @@ export function createReferenceCountContext() {
 
   const Consumer = Context.Consumer;
   const Provider = (props: ReferenceCountProviderProps) => {
+    const forceUpdate = useForceUpdate()
     const rcRef = useRef<ReferenceCount>(new ReferenceCount())
+    useEffect(() => {
+      const listener = () => forceUpdate()
+      rcRef.current.subscribeCountChange(listener)
+      return () => {
+        rcRef.current.unsubscribeCountChange(listener)
+      }
+    }, [])
     return (
       <Context.Provider
         value={{
-          retain: rcRef.current.retain,
-          release: rcRef.current.release,
-          subscribeCountChange: rcRef.current.subscribeCountChange,
-          unsubscribeCountChange: rcRef.current.unsubscribeCountChange,
+          getCount: rcRef.current.getCount.bind(rcRef.current),
+          retain: rcRef.current.retain.bind(rcRef.current),
+          release: rcRef.current.release.bind(rcRef.current),
+          subscribeCountChange: rcRef.current.subscribeCountChange.bind(rcRef.current),
+          unsubscribeCountChange: rcRef.current.unsubscribeCountChange.bind(rcRef.current),
         }}
       >
         {props.children}
@@ -39,8 +50,8 @@ export function createReferenceCountContext() {
     const fallbackErrorMessage = "please use useReferenceCountContextValue in ReferenceCountContext.Provider"
     const contextValue = useContext(Context)
     if (!contextValue) {
-      console.warn(errorMessage || fallbackErrorMessage)
-      throw new Error(errorMessage || fallbackErrorMessage)
+      console.warn(fallbackErrorMessage)
+      throw new Error(fallbackErrorMessage)
     }
     return contextValue;
   }
@@ -48,19 +59,19 @@ export function createReferenceCountContext() {
   const useReference = () => {
     const contextValue = useContextValue("please use useReference in ReferenceCountContext.Provider")
     return {
-      reference: contextValue.retain,
-      unreference: contextValue.release,
+      retain: contextValue.retain,
+      release: contextValue.release,
     }
   }
 
-  const useAutoReference = (key: string) => {
+  const useAutoReference = (key: string, n: number = 1) => {
     const contextValue = useContextValue("please use useAutoReference in ReferenceCountContext.Provider")
     useEffect(() => {
-      contextValue.retain(key)
+      contextValue.retain(key, n)
       return () => {
-        contextValue.release(key)
+        contextValue.release(key, n)
       }
-    }, [contextValue, key])
+    }, [key])
   }
 
   const useCountWatch = (onCountChange: (key: string, count: number) => void) => {
@@ -70,7 +81,7 @@ export function createReferenceCountContext() {
       return () => {
         contextValue.unsubscribeCountChange(onCountChange)
       }
-    }, [contextValue, onCountChange])
+    }, [onCountChange])
   }
 
   return {
