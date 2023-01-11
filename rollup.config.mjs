@@ -24,6 +24,7 @@ const config = {
   ],
   external: [
     'react', 'react-dom',
+    'events',
   ],
   acornInjectPlugins: [
     jsx(),
