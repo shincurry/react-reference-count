@@ -19,7 +19,9 @@ it("test ReferenceCountContext functionality", async () => {
     const [array] = useState<string[]>(["A", "A", "B", "B", "A", "C"])
     const [len, setLen] = useState<number>(0);
 
-    const { getCount } = Context.useContextValue()
+    const countA = Context.useCount("A");
+    const countB = Context.useCount("B");
+    const countC = Context.useCount("C");
     Context.useCountWatch(props.onCountChange);
 
     return (
@@ -45,9 +47,9 @@ it("test ReferenceCountContext functionality", async () => {
           )
         })}
 
-        <div data-testid="count:A">{getCount("A")}</div>
-        <div data-testid="count:B">{getCount("B")}</div>
-        <div data-testid="count:C">{getCount("C")}</div>
+        <div data-testid="count:A">{countA}</div>
+        <div data-testid="count:B">{countB}</div>
+        <div data-testid="count:C">{countC}</div>
       </div>
     )
   }
@@ -168,7 +170,7 @@ it("test ReferenceCountContext AutoReference", async () => {
     const [array] = useState<string[]>(["A", "A", "B", "B", "A", "C"])
     const [len, setLen] = useState<number>(0);
 
-    const { getCount } = Context.useContextValue()
+    const countMap = Context.useCountMap()
     Context.useCountWatch(props.onCountChange);
 
     return (
@@ -194,9 +196,9 @@ it("test ReferenceCountContext AutoReference", async () => {
           )
         })}
 
-        <div data-testid="count:A">{getCount("A")}</div>
-        <div data-testid="count:B">{getCount("B")}</div>
-        <div data-testid="count:C">{getCount("C")}</div>
+        <div data-testid="count:A">{countMap.get("A")}</div>
+        <div data-testid="count:B">{countMap.get("B")}</div>
+        <div data-testid="count:C">{countMap.get("C")}</div>
       </div>
     )
   }
@@ -334,6 +336,74 @@ it("test ReferenceCountContext useContextValue empty errorMessage", () => {
     <TestComponentWrapper />
   );
 })
+
+it("test ReferenceCountContext no extra render", async () => {
+  const onCountChange = jest.fn((key: string, count: number) => {})
+  let renderTimes = 0;
+
+  function TestComponentWrapper(props: { onCountChange: (key: string, count: number) => void }) {
+    return (
+      <Context.Provider>
+        <TestComponent onCountChange={props.onCountChange} />
+      </Context.Provider>
+    )
+  }
+  function TestComponent(props: { onCountChange: (key: string, count: number) => void }) {
+    const countA = Context.useCount("A");
+    Context.useCountWatch(props.onCountChange);
+    const { retain, release } = Context.useReference()
+    renderTimes++;
+    return (
+      <div>
+        <button
+          data-testid="len+1"
+          onClick={() => {
+            retain("A")
+          }}></button>
+        <button
+          data-testid="len-1"
+          onClick={() => {
+            release("A")
+          }}></button>
+
+        <div data-testid="count:A">{countA}</div>
+      </div>
+    )
+  }
+
+  const renderered = render(
+    <TestComponentWrapper onCountChange={onCountChange} />
+  );
+
+  const button1 = renderered.getByTestId("len+1")
+  const button2 = renderered.getByTestId("len-1")
+
+  const countA = renderered.getByTestId("count:A")
+
+
+  expect(countA.textContent).toBe('')
+  expect(onCountChange.mock.calls.length).toBe(0)
+  expect(renderTimes).toBe(1)
+
+  fireEvent.click(button1)
+  await waitFor(() => {
+    expect(countA.textContent).toBe('1')
+    expect(onCountChange.mock.calls.length).toBe(1)
+    expect(onCountChange.mock.lastCall![0]).toBe("A")
+    expect(onCountChange.mock.lastCall![1]).toBe(1)
+    expect(renderTimes).toBe(2)
+  });
+
+  fireEvent.click(button2)
+  await waitFor(() => {
+    expect(countA.textContent).toBe('')
+    expect(onCountChange.mock.calls.length).toBe(2)
+    expect(onCountChange.mock.lastCall![0]).toBe("A")
+    expect(onCountChange.mock.lastCall![1]).toBe(0)
+    expect(renderTimes).toBe(3)
+  });
+
+});
 
 function toThrowSilently(fn: Function) {
   jest.spyOn(console, "error");

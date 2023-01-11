@@ -1,9 +1,10 @@
-import React, { useContext, useEffect, useRef } from "react";
+import React, { useContext, useEffect, useMemo, useRef } from "react";
 import { ReferenceCount } from "../class/ReferenceCount";
 import { useForceUpdate } from "../utils/useForceUpdate";
 
 
 export interface ReferenceCountValue {
+  getCountMap: () => Map<string, number>;
   getCount: (key: string) => number | undefined;
   retain: (key: string, n?: number) => void;
   release: (key: string, n?: number) => void;
@@ -34,6 +35,7 @@ export function createReferenceCountContext() {
     return (
       <Context.Provider
         value={{
+          getCountMap: rcRef.current.getCountMap.bind(rcRef.current),
           getCount: rcRef.current.getCount.bind(rcRef.current),
           retain: rcRef.current.retain.bind(rcRef.current),
           release: rcRef.current.release.bind(rcRef.current),
@@ -54,6 +56,26 @@ export function createReferenceCountContext() {
       throw new Error(fallbackErrorMessage)
     }
     return contextValue;
+  }
+
+  const useCountMap = () => {
+    const contextValue = useContextValue("please use useCount in ReferenceCountContext.Provider")
+
+    const countMap = useMemo(() => {
+      return contextValue.getCountMap()
+    }, [contextValue])
+
+    return countMap
+  }
+
+  const useCount = (key: string) => {
+    const contextValue = useContextValue("please use useCount in ReferenceCountContext.Provider")
+
+    const count = useMemo(() => {
+      return contextValue.getCount(key)
+    }, [contextValue])
+
+    return count
   }
 
   const useReference = () => {
@@ -89,6 +111,8 @@ export function createReferenceCountContext() {
     Consumer,
     Provider,
     useContextValue,
+    useCountMap,
+    useCount,
     useCountWatch,
     useReference,
     useAutoReference,

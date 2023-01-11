@@ -24,6 +24,7 @@ export function useReferenceCount(onCountChange?: (key: string, count: number) =
   }, [onCountChange])
 
   return {
+    getCountMap: rcRef.current.getCountMap.bind(rcRef.current),
     getCount: rcRef.current.getCount.bind(rcRef.current),
     retain: rcRef.current.retain.bind(rcRef.current),
     release: rcRef.current.release.bind(rcRef.current),

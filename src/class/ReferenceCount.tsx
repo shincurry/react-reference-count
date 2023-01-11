@@ -6,6 +6,10 @@ export class ReferenceCount {
   private countMap: Map<string, number> = new Map();
   private events: EventEmitter = new EventEmitter();
 
+
+  public getCountMap() {
+    return new Map(this.countMap)
+  }
   public getCount(key: string) {
     return this.countMap.get(key)
   }
