@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'yarn'
+        node-version-file: '.nvmrc'
+
+    # yarn install
+    - name: Install
+      run: yarn install
+
+    # build typescript
+    - name: Build
+      run: yarn build
+
+  lint:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'yarn'
+        node-version-file: '.nvmrc'
+
+    # yarn install
+    - name: Install
+      run: yarn install
+
+    # run eslint
+    - name: Lint
+      uses: tinovyatkin/action-eslint@master
+      with:
+        repo-token: ${{secrets.GITHUB_TOKEN}}
+        check-name: eslint
+
+  test:
+    permissions:
+      issues: write
+      checks: write
+      pull-requests: write
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'yarn'
+        node-version-file: '.nvmrc'
+
+    - uses: ArtiomTr/jest-coverage-report-action@v2
+      with:
+        package-manager: yarn
