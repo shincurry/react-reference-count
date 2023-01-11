@@ -10,9 +10,10 @@ export function useReferenceCount(onCountChange?: (key: string, count: number) =
     const listener = () => forceUpdate()
     rcRef.current.subscribeCountChange(listener)
     return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       rcRef.current.unsubscribeCountChange(listener)
     }
-  }, [])
+  }, [forceUpdate])
 
   useEffect(() => {
     if (!onCountChange) return;

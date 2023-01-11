@@ -29,9 +29,10 @@ export function createReferenceCountContext() {
       const listener = () => forceUpdate()
       rcRef.current.subscribeCountChange(listener)
       return () => {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         rcRef.current.unsubscribeCountChange(listener)
       }
-    }, [])
+    }, [forceUpdate])
     return (
       <Context.Provider
         value={{
@@ -50,10 +51,11 @@ export function createReferenceCountContext() {
 
   const useContextValue = (errorMessage?: string) => {
     const fallbackErrorMessage = "please use useReferenceCountContextValue in ReferenceCountContext.Provider"
+    const _errorMessage = errorMessage ?? fallbackErrorMessage
     const contextValue = useContext(Context)
     if (!contextValue) {
-      console.warn(fallbackErrorMessage)
-      throw new Error(fallbackErrorMessage)
+      console.warn(_errorMessage)
+      throw new Error(_errorMessage)
     }
     return contextValue;
   }
@@ -73,7 +75,7 @@ export function createReferenceCountContext() {
 
     const count = useMemo(() => {
       return contextValue.getCount(key)
-    }, [contextValue])
+    }, [contextValue, key])
 
     return count
   }
@@ -93,7 +95,8 @@ export function createReferenceCountContext() {
       return () => {
         contextValue.release(key, n)
       }
-    }, [key])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [key, n])
   }
 
   const useCountWatch = (onCountChange: (key: string, count: number) => void) => {
@@ -103,6 +106,7 @@ export function createReferenceCountContext() {
       return () => {
         contextValue.unsubscribeCountChange(onCountChange)
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [onCountChange])
   }
 

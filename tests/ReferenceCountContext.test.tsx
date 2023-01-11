@@ -300,7 +300,7 @@ it("test ReferenceCountContext AutoReference", async () => {
 
 it("Hooks from ReferenceCountContext should used in ReferenceCountContext.Provider", async () => {
   function TestComponent() {
-    Context.useCountWatch(() => {})
+    const {} = Context.useContextValue()
     return (
       <div></div>
     )
@@ -325,7 +325,7 @@ it("test ReferenceCountContext useContextValue empty errorMessage", () => {
 
   function TestComponent() {
 
-    const {} = Context.useContextValue()
+    const {} = Context.useContextValue("")
 
     return (
       <div></div>
